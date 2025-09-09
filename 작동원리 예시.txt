@@ -1,0 +1,13 @@
+<<가계부 백엔드>>
+-> 로그인해서 내 계좌/카테고리/거래를 저장하고, 월별 예산과 실제 지출을 비교해 보여주는 가계부 서버(API) 구축
+
+<<작동 순서>>
+1. 서버켜기 : uvicorn main:app --reload
+2. 브라우저 진입 : http://127.0.0.1:8000/docs
+3. 회원가입 : /auth/register -> username, email, password 입력 -> Execute -> 성공 시 새 사용자 생성
+4. 로그인 : /auth/login -> 토큰(access_token) 복사 -> 우측 상단 Authorize -> Bearer <토큰> 붙여넣기 -> Authorize
+5. 계좌 만들기 : /accounts POST -> {account_name:"현금", balance:100000} -> Execute -> 성공시 id 생성
+6. 카테고리 만들기 : /categories POST -> {name:"식비", type:"expense"} -> Execute
+7. 거래 만들기 : /transactions POST -> {amount:12000, description:"점심", date:"오늘", account_id:1, category_id:1} -> Execute
+8. 예산 넣기 : /budgets POST -> {category_id:1, month:"2025-09", amount:300000} -> Execute
+9. 요약보기 : /budgets/summary?month=2025-09 GET -> budget 300,000 / spent 12,000 / diff 288,000
