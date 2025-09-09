@@ -25,6 +25,12 @@ categories: 카테고리(수입/지출) 분류 등
 transactions: 거래 내역 (금액, 메모, 발생일, 계정, 카테고리) 등
 budget: 설정 예산, 월 예산 등
 
+User(사람)
+ ├─ Account(내 통장 여러 개)
+ │    └─ Transaction(입출금 기록들)
+ └─ Category(식비/교통/월급…; income or expense)
+ └─ Budget(월별 예산: 카테고리마다)
+
 -- 구현 계획
 1. 초기 세팅: FastAPI, Alembic, JWT 인증 구현
 2. DB 마이그레이션: User, Account, Category, Transaction, Budget 테이블 생성
@@ -37,3 +43,4 @@ budget: 설정 예산, 월 예산 등
   /reports/budget-status?month=YYYY-MM (예산 대비 사용률)
   /reports/summary.csv (CSV 다운로드)
 8. Swagger/Thunder Client: API 문서화 및 테스트
+
