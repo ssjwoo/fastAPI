@@ -38,9 +38,114 @@ User(사람)
 4. 계좌/카테고리 API: CRUD, 소유권 검사
 5. 거래 API: CRUD + Query 필터(기간/금액/카테고리별 조회)
 6. 예산 API: CRUD, 월별 예산 조회
-7.리포트 API:
+7. 리포트 API:
   /reports/summary?month=YYYY-MM (총수입/총지출, 카테고리별 합계)
   /reports/budget-status?month=YYYY-MM (예산 대비 사용률)
   /reports/summary.csv (CSV 다운로드)
 8. Swagger/Thunder Client: API 문서화 및 테스트
 
+
+
+-- 세팅 가이드
+
+1. MySQL 계정 설정
+
+MySQL 8 이상에서는 root 계정이 기본적으로 caching_sha2_password 인증 방식을 쓰는데,
+Python 드라이버(pymysql)와 충돌이 날 수 있음.
+
+SQL에서 다음 명령어로 root 계정 인증 방식을 바꿔주세요:
+
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '비밀번호';
+ALTER USER 'root'@'127.0.0.1' IDENTIFIED WITH mysql_native_password BY '비밀번호';
+FLUSH PRIVILEGES;
+
+
+⚠️ root@localhost와 root@127.0.0.1은 다른 계정으로 취급되므로 둘 다 바꿔야 합니다.
+
+2. .env 파일 작성
+
+프로젝트 루트에 .env 파일을 만들고 다음 내용을 채워주세요:
+
+DB_USER=root
+DB_PASSWORD=비밀번호
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_NAME=finance
+
+SECRET_KEY=your_secret_key
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE=6000
+REFRESH_TOKEN_EXPIRE=604800
+
+3. 의존성 설치
+pip install pymysql
+
+4. Alembic 마이그레이션 실행
+
+DB 테이블 자동 생성/업데이트는 Alembic으로 관리합니다:
+
+alembic revision --autogenerate -m "init tables"
+alembic upgrade head
+
+5. 서버 실행
+uvicorn app.main:app --reload --port 8081
+
+
+
+
+
+
+-- 마이그레이션 사용법 (Alembic)
+
+1. 마이그레이션 스크립트 생성
+
+모델을 수정했을 때는 새로운 revision 파일을 생성합니다:
+
+alembic revision --autogenerate -m "변경 내용"
+
+
+-> alembic/versions/ 폴더에 자동으로 Python 스크립트가 생성됩니다.
+(예: 20250912_init_tables.py)
+
+2. DB에 반영
+
+생성된 마이그레이션 스크립트를 실제 DB에 반영하려면:
+
+alembic upgrade head
+
+DB 스키마가 최신 상태로 업데이트됩니다.
+
+3. DB 확인
+
+MySQL에서 확인:
+
+SHOW TABLES;
+
+
+-> users, accounts, categories, budgets, transactions 등 우리가 만든 테이블이 보이면 정상입니다.
+
+4. alembic_version 테이블
+
+Alembic이 자동으로 만든 시스템 테이블입니다.
+
+현재 DB가 적용 중인 revision ID를 저장하고 있어, upgrade/downgrade 실행 시 기준점이 됩니다.
+
+이 테이블은 프로젝트마다 1개만 존재하며, 직접 수정하거나 삭제하면 안 됩니다.
+
+Git에는 커밋할 필요 없습니다. (DB 내부에서만 쓰임)
+
+5. 팀원용 사용법
+
+프로젝트 클론 후 .env 세팅
+
+pip install pymysql
+
+최신 스키마 적용:
+
+alembic upgrade head
+
+
+필요 시 새로운 변경은:
+
+alembic revision --autogenerate -m "message"
+alembic upgrade head
