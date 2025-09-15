@@ -1,36 +1,3 @@
-아래는 **리포트 API 3종 + CSV 다운로드**까지 포함한 **완성 단일 파일**입니다.
-
-* 기존 MVP(회원가입/로그인, 계좌/카테고리/거래/예산 CRUD, 월별 예산 요약)에 더해
-* `/reports/summary`, `/reports/budget-status`, `/reports/summary.csv`를 추가했고
-* 거래 조회에 **금액/날짜 범위 필터**도 넣었습니다.
-
-> 실행 전 설치: `pip install fastapi "uvicorn[standard]" sqlalchemy passlib[bcrypt] python-jose[cryptography]`
->
-> 실행: `uvicorn main:app --reload`
-
----
-
-## main.py (리포트 3종 + CSV 포함, 한 파일 완성본)
-
-```python
-"""
-가계부 백엔드 — 리포트 3종 + CSV 확장 (Single-file 완성본)
-========================================================
-✓ 회원가입/로그인(JWT)
-✓ 계좌/카테고리/거래/예산 CRUD
-✓ 거래 조회 필터(월/계좌/카테고리 + 금액/날짜 범위)
-✓ 월별 예산 요약(/budgets/summary)
-✓ 리포트 3종
-   - /reports/summary?month=YYYY-MM  → 총수입/총지출, 카테고리별 합계
-   - /reports/budget-status?month=YYYY-MM → 예산 대비 사용률(%)
-   - /reports/summary.csv?month=YYYY-MM → CSV 다운로드
-
-학습 포인트(왕초보 설명):
-- **입력은 모두 양수**로 받고, 증/감은 카테고리의 `type(income|expense)`가 결정합니다.
-- **돈은 반쪽만 바뀌면 큰일**: 거래와 잔액을 **같은 DB 트랜잭션**에서 처리합니다.
-- **리포트**는 이미 저장된 거래/예산을 **합계/묶음**으로 계산해 응답으로 보여줍니다.
-"""
-
 from datetime import datetime, timedelta, date
 from typing import Optional, List
 from decimal import Decimal, ROUND_HALF_UP
@@ -39,7 +6,7 @@ import io, csv
 from fastapi import FastAPI, Depends, HTTPException, status, Query, Path
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
@@ -186,7 +153,7 @@ class Token(BaseModel):
 
 class UserCreate(BaseModel):
     username: str = Field(min_length=3, max_length=30)
-    email: EmailStr
+    email: str  # 임시로 EmailStr을 str로 변경
     password: str = Field(min_length=6)
 
 
@@ -194,7 +161,7 @@ class UserOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
     username: str
-    email: EmailStr
+    email: str  # 임시로 EmailStr을 str로 변경
     role: str
 
 
@@ -790,44 +757,3 @@ def _month_range(month: str):
     else:
         end = date(y, m + 1, 1)
     return start, end
-
-
-# ==========================
-# 7) 루트 엔드포인트 (상태 확인)
-# ==========================
-@app.get("/")
-def root():
-    return {"ok": True, "service": "Personal Ledger API — Reports Edition", "docs": "/docs"}
-```
-
----
-
-## 빠른 테스트 가이드 (Swagger)
-
-1. `/auth/register` → `/auth/login` → **Authorize** 토큰 설정
-2. `/accounts` POST로 `현금` 계좌 생성(초기 잔액 100000)
-3. `/categories` POST로 `식비(expense)`, `월급(income)` 생성
-4. `/transactions` POST로 9월에 수입/지출 몇 개 입력
-5. `/budgets` POST로 9월 예산 설정(식비 300000 등)
-6. 리포트 확인
-
-   * `/reports/summary?month=2025-09`
-   * `/reports/budget-status?month=2025-09`
-   * `/reports/summary.csv?month=2025-09` → **파일 다운로드** 확인
-
-(참고) 거래 목록 필터: `/transactions?month=2025-09&amount_min=5000&amount_max=20000`
-
----
-
-## 실패·에러 팁
-
-* `401` → 토큰 빠짐/만료: **Authorize**로 토큰 다시 입력
-* `400` → `month` 형식(`YYYY-MM`) 또는 `type` 철자 확인
-* CSV가 열리지 않음 → 응답이 파일로 저장되었는지, Excel에서 `UTF-8`로 열기
-
----
-
-필요하면 동일 코드를 **폴더 분리 버전(routers/models/schemas/services)** 으로 변환해 드릴게요.
-
-```
-```
